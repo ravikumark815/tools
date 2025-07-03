@@ -29,4 +29,4 @@ done | awk -F, '
 }
 END {
   for (l in count) printf "%s,%d,%d,%d,%d,%d\n", l, count[l], lines[l], blanks[l], comments[l], code[l];
-}'
+}' | column -t -s ','
