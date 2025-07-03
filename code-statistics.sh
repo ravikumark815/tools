@@ -6,20 +6,19 @@ echo "Language,Files,Lines,Blanks,Comments,Code"
 find "$DIR" -type f | while read -r file; do
     ext="${file##*.}"
     lang=""
-    comm_start=""
-    comm_end=""
     single_line_comm=""
+    has_block_comments=0 # Flag to indicate if language uses /* */
 
     case "$ext" in
         py) lang="Python"; single_line_comm="#" ;;
         sh) lang="Shell"; single_line_comm="#" ;;
-        js) lang="JavaScript"; single_line_comm="//"; comm_start="/\\*"; comm_end="\\*/" ;;
-        c|h) lang="C"; single_line_comm="//"; comm_start="/\\*"; comm_end="\\*/" ;;
-        cpp|hpp|cc|cxx) lang="C++"; single_line_comm="//"; comm_start="/\\*"; comm_end="\\*/" ;;
-        java) lang="Java"; single_line_comm="//"; comm_start="/\\*"; comm_end="\\*/" ;;
-        go) lang="Go"; single_line_comm="//"; comm_start="/\\*"; comm_end="\\*/" ;;
+        js) lang="JavaScript"; single_line_comm="//"; has_block_comments=1 ;;
+        c|h) lang="C"; single_line_comm="//"; has_block_comments=1 ;;
+        cpp|hpp|cc|cxx) lang="C++"; single_line_comm="//"; has_block_comments=1 ;;
+        java) lang="Java"; single_line_comm="//"; has_block_comments=1 ;;
+        go) lang="Go"; single_line_comm="//"; has_block_comments=1 ;;
         rb) lang="Ruby"; single_line_comm="#" ;;
-        php) lang="PHP"; single_line_comm="//"; comm_start="/\\*"; comm_end="\\*/" ;;
+        php) lang="PHP"; single_line_comm="//"; has_block_comments=1 ;;
         *) continue ;;
     esac
 
@@ -35,21 +34,23 @@ find "$DIR" -type f | while read -r file; do
     fi
 
     # Handle block comments for languages that have them
-    if [ -n "$comm_start" ] && [ -n "$comm_end" ]; then
-        # Use a here-document to safely pass the awk script
-        block_comments=$(awk -v start_re="${comm_start}" -v end_re="${comm_end}" '
+    if [ "$has_block_comments" -eq 1 ]; then
+        # Hardcode the /* and */ patterns directly in awk
+        block_comments=$(awk '
             BEGIN {
                 in_comment = 0;
                 comment_lines = 0;
             }
             {
+                # Pattern for /*
+                start_re = "/\\*";
+                # Pattern for */
+                end_re = "\\*/";
+
                 # Check for single-line block comments (e.g., /* comment */)
-                if ($0 ~ start_re && $0 ~ end_re) {
-                    # Only count if the comment starts at the beginning of the line (after optional whitespace)
-                    # This avoids counting /* inside a line of code as a full comment line
-                    if ($0 ~ "^[[:space:]]*" start_re) {
-                         comment_lines++;
-                    }
+                # Ensure the /* is at the beginning of the line after optional whitespace
+                if ($0 ~ "^[[:space:]]*" start_re && $0 ~ end_re) {
+                    comment_lines++;
                 } else if ($0 ~ start_re) {
                     in_comment = 1;
                     comment_lines++; # Count the line where the comment starts
