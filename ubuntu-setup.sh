@@ -15,8 +15,8 @@ sudo apt-get autoremove -y
 sudo apt-get autoclean -y
 sudo apt-get clean -y
 
-echo ">>>> Installing essentials: net-tools, openssh-server, gcc, g++, python3-pip, git, curl"
-sudo apt-get install -y net-tools openssh-server gcc g++ python3-pip git curl
+echo ">>>> Installing essentials:"
+sudo apt-get install -y net-tools openssh-server gcc g++ python3-pip git curl btop nethogs
 
 echo ">>>> Upgrading pip and installing useful Python packages"
 python3 -m pip install --user --upgrade pip
